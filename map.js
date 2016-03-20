@@ -11,6 +11,7 @@ var map = {
   context: null,
   times: 400,
   nogo: false,
+  count: 0,
   add: function(a, b) {
     return [a[0]+b[0], a[1]+b[1]];
   },
@@ -27,7 +28,11 @@ var map = {
     if (map.nogo) {
       return;
     }
-    if (d != map.dirNow && d != (map.dirNow + 2)%map.dirSet.length) {
+    if (d == map.dirNow) {
+      setTimeout(map.forward, map.times);
+      map.count ++;
+    }
+    else if (d != (map.dirNow + 2)%map.dirSet.length) {
       map.dirNow = d;
       map.nogo = true;
     }
@@ -62,25 +67,23 @@ var map = {
     }
   },
   forward: function () {
+    map.count --;
     if (!map.start) {
       return;
     }
     var snake = map.snake;
     var newNode = map.add(snake[snake.length-1],map.dirSet[map.dirNow]);
-    var oldNode = snake[0];
-    if (map.isEqual(oldNode, newNode)) {
-      snake.shift();
-      snake.push(newNode);
-    }
-    else if (map.isValid(newNode) && snake.filter(function(tmp){return map.isEqual(tmp,newNode)}).length==0) {
-      snake.push(newNode);
+    var oldNode = snake.shift();
+    map.paintNode(oldNode, 'white');
+
+    if (map.isValid(newNode) && snake.filter(function(tmp){return map.isEqual(tmp,newNode)}).length==0) {
       map.paintNode(newNode, 'green');
+      snake.push(newNode);
       if (map.isEqual(newNode, map.food)) {
+        map.paintNode(oldNode, 'green');
+        snake.unshift(oldNode);
+
         map.generateFood();
-      }
-      else {
-        map.paintNode(oldNode, 'white');
-        snake.shift();
       }
     }
     else {
@@ -88,7 +91,10 @@ var map = {
       map.start = false;
     }
     map.nogo = false;
-    setTimeout(map.forward, map.times);
+    if (map.count == 0) {
+      setTimeout(map.forward, map.times);
+      map.count ++;
+    }
   },
   paintFrame: function () {
     map.canvas = document.getElementById("canvas");
@@ -130,6 +136,9 @@ var map = {
       if(keyID === 37 || keyID === 65)  { // left arrow and A
         map.turn(1);
       }
+      if(keyID === 80)  {
+        map.init();
+      }
     }, true);
   },
   eraseAll: function() {
@@ -152,7 +161,11 @@ var map = {
     }
     map.nogo = false;
     map.generateFood();
-    setTimeout(map.forward, map.times);
+
+    if (map.count == 0) {
+      setTimeout(map.forward, map.times);
+      map.count ++;
+    }
     map.start=true;
   }
 }
